@@ -1,0 +1,14 @@
+{
+  "name": "react-doctor",
+  "private": true,
+  "scripts": {
+    "build": "pnpm -r run build",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "pnpm build && changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.27.0",
+    "typescript": "^5.7.0"
+  }
+}
