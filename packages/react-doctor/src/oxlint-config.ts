@@ -1,0 +1,57 @@
+import type { LintPluginOptionsSchema } from "./types.js";
+
+interface OxlintConfig {
+  plugins: LintPluginOptionsSchema[];
+  rules: Record<string, "error" | "warn" | "off">;
+}
+
+export const OXLINT_CONFIG: OxlintConfig = {
+  plugins: ["react", "jsx-a11y", "react-perf", "import", "typescript"],
+  rules: {
+    "react/rules-of-hooks": "error",
+    "react/no-direct-mutation-state": "error",
+    "react/jsx-no-duplicate-props": "error",
+    "react/jsx-key": "error",
+    "react/no-children-prop": "warn",
+    "react/no-danger": "warn",
+    "react/jsx-no-script-url": "error",
+    "react/no-render-return-value": "warn",
+    "react/no-string-refs": "warn",
+    "react/no-unescaped-entities": "warn",
+    "react/no-is-mounted": "warn",
+    "react/require-render-return": "error",
+    "react/no-unknown-property": "warn",
+
+    "jsx-a11y/alt-text": "error",
+    "jsx-a11y/anchor-is-valid": "warn",
+    "jsx-a11y/click-events-have-key-events": "warn",
+    "jsx-a11y/no-static-element-interactions": "warn",
+    "jsx-a11y/no-noninteractive-element-interactions": "warn",
+    "jsx-a11y/role-has-required-aria-props": "error",
+    "jsx-a11y/no-autofocus": "warn",
+    "jsx-a11y/heading-has-content": "warn",
+    "jsx-a11y/html-has-lang": "warn",
+    "jsx-a11y/no-redundant-roles": "warn",
+    "jsx-a11y/scope": "warn",
+    "jsx-a11y/tabindex-no-positive": "warn",
+    "jsx-a11y/label-has-associated-control": "warn",
+    "jsx-a11y/no-distracting-elements": "error",
+    "jsx-a11y/iframe-has-title": "warn",
+
+    "react-perf/jsx-no-new-object-as-prop": "warn",
+    "react-perf/jsx-no-new-array-as-prop": "warn",
+    "react-perf/jsx-no-new-function-as-prop": "warn",
+    "react-perf/jsx-no-jsx-as-prop": "warn",
+
+    "import/no-cycle": "error",
+    "import/no-self-import": "error",
+    "import/no-duplicates": "warn",
+    "import/no-named-default": "warn",
+
+    "typescript/consistent-type-imports": "warn",
+    "typescript/no-explicit-any": "warn",
+    "typescript/no-non-null-assertion": "warn",
+    "typescript/prefer-ts-expect-error": "warn",
+    "typescript/no-unnecessary-type-assertion": "warn",
+  },
+};

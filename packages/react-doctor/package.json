@@ -1,11 +1,31 @@
 {
   "name": "react-doctor",
   "version": "0.0.1",
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
+  "bin": {
+    "react-doctor": "./dist/cli.cjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/cli.d.ts",
+      "import": "./dist/cli.js",
+      "require": "./dist/cli.cjs"
+    }
+  },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsup --watch",
+    "build": "rm -rf dist && NODE_ENV=production tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "commander": "^14.0.3",
+    "oxlint": "^1.47.0",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.1"
   }
 }
