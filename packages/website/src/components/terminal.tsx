@@ -361,7 +361,7 @@ const Terminal = () => {
   }, []);
 
   return (
-    <div className="min-h-screen w-full bg-[#0a0a0a] p-6 pb-32 font-mono text-base leading-relaxed text-neutral-300 sm:p-8 sm:pb-40 sm:text-lg">
+    <div className="mx-auto min-h-screen w-full max-w-3xl bg-[#0a0a0a] p-6 pb-32 font-mono text-base leading-relaxed text-neutral-300 sm:p-8 sm:pb-40 sm:text-lg">
       <div>
         <span className="text-neutral-500">$ </span>
         <span>{state.typedCommand}</span>
