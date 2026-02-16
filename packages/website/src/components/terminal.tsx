@@ -143,10 +143,6 @@ const DoctorBranding = ({ score }: { score: number }) => {
       <pre className={`${colorClass} leading-tight`}>
         {`  ${BOX_TOP}\n  │ ${eyes} │\n  │ ${mouth} │\n  ${BOX_BOTTOM}`}
       </pre>
-      <div>
-        {"  React Doctor "}
-        <span className="text-neutral-500">(www.react.doctor)</span>
-      </div>
     </div>
   );
 };
