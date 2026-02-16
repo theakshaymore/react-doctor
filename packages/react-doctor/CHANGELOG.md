@@ -1,5 +1,11 @@
 # react-doctor
 
+## 0.0.5
+
+### Patch Changes
+
+- scores
+
 ## 0.0.4
 
 ### Patch Changes

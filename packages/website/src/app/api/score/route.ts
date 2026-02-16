@@ -48,13 +48,22 @@ const isValidDiagnostic = (value: unknown): value is DiagnosticInput => {
   );
 };
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
+export const OPTIONS = (): Response =>
+  new Response(null, { status: 204, headers: CORS_HEADERS });
+
 export const POST = async (request: Request): Promise<Response> => {
   const body = await request.json().catch(() => null);
 
   if (!body || !Array.isArray(body.diagnostics)) {
     return Response.json(
       { error: "Request body must contain a 'diagnostics' array" },
-      { status: 400 },
+      { status: 400, headers: CORS_HEADERS },
     );
   }
 
@@ -65,11 +74,14 @@ export const POST = async (request: Request): Promise<Response> => {
   if (!isValidPayload) {
     return Response.json(
       { error: "Each diagnostic must have 'plugin' (string), 'rule' (string), and 'severity' ('error' | 'warning')" },
-      { status: 400 },
+      { status: 400, headers: CORS_HEADERS },
     );
   }
 
   const score = calculateScore(body.diagnostics);
 
-  return Response.json({ score, label: getScoreLabel(score) });
+  return Response.json(
+    { score, label: getScoreLabel(score) },
+    { headers: CORS_HEADERS },
+  );
 };
