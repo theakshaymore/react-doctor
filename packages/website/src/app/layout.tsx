@@ -11,6 +11,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "React Doctor",
   description: "Let coding agents diagnose and fix your React code.",
+  icons: { icon: "/favicon.png" },
 };
 
 export default function RootLayout({
