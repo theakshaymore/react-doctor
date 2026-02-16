@@ -66,7 +66,7 @@ const printDiscoveredProjects = (packages: WorkspacePackage[]): void => {
 
   logger.break();
   logger.dim(`Run with a specific path to scan a project:`);
-  logger.dim(`  npx react-doctor@latest <path>`);
+  logger.dim(`  npx -y react-doctor@latest <path>`);
   logger.break();
 };
 

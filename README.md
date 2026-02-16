@@ -14,13 +14,13 @@ One command scans your codebase for security, performance, correctness, and arch
 Run this at your project root:
 
 ```bash
-npx react-doctor@latest .
+npx -y react-doctor@latest .
 ```
 
 Use `--verbose` to see affected files and line numbers:
 
 ```bash
-npx react-doctor@latest . --verbose
+npx -y react-doctor@latest . --verbose
 ```
 
 ## What it checks
@@ -43,7 +43,7 @@ React Doctor runs **47+ rules** across these categories:
 ## Example output
 
 ```
-$ npx react-doctor@latest .
+$ npx -y react-doctor@latest .
 
 react-doctor v0.0.5
 
@@ -88,7 +88,7 @@ Options:
 React Doctor is designed to work with coding agents like Cursor, Claude Code, Codex, and Copilot. Run it in your project, then paste the output into your agent to get fixes.
 
 ```bash
-npx react-doctor@latest . --verbose
+npx -y react-doctor@latest . --verbose
 ```
 
 The `--verbose` flag includes file paths and line numbers so your agent knows exactly where to look.
