@@ -159,6 +159,29 @@ const printScoreGauge = (score: number, label: string): void => {
   logger.break();
 };
 
+const getScoreVerdict = (score: number): string => {
+  if (score >= SCORE_GOOD_THRESHOLD) return "says your codebase is healthy";
+  if (score >= SCORE_OK_THRESHOLD) return "found some issues to fix";
+  return "needs your attention";
+};
+
+const printDoctorAscii = (score: number): void => {
+  const verdict = getScoreVerdict(score);
+  const colorize = (text: string) => colorizeByScore(text, score);
+
+  logger.break();
+  logger.log(colorize("     ┌─────┐"));
+  logger.log(colorize("     │ ∩ ∩ │"));
+  logger.log(colorize("     │  ▽  │"));
+  logger.log(colorize("     └──┬──┘"));
+  logger.log(colorize("    ┌───┴───┐"));
+  logger.log(colorize("    │  ✚    │"));
+  logger.log(colorize("    │       │"));
+  logger.log(colorize("    └───────┘"));
+  logger.break();
+  logger.log(`  ${highlighter.dim("react-doctor")} ${colorize(verdict)}`);
+};
+
 const printSummary = (
   diagnostics: Diagnostic[],
   elapsedMilliseconds: number,
@@ -192,6 +215,10 @@ const printSummary = (
   parts.push(highlighter.dim(`in ${elapsed}`));
 
   logger.log(`  ${parts.join("  ")}`);
+
+  if (scoreResult) {
+    printDoctorAscii(scoreResult.score);
+  }
 
   try {
     const diagnosticsDirectory = writeDiagnosticsDirectory(diagnostics);
@@ -291,6 +318,7 @@ export const scan = async (directory: string, options: ScanOptions): Promise<voi
     logger.break();
     if (scoreResult) {
       printScoreGauge(scoreResult.score, scoreResult.label);
+      printDoctorAscii(scoreResult.score);
     } else {
       logger.dim(`  ${OFFLINE_MESSAGE}`);
     }
