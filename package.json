@@ -1,7 +1,6 @@
 {
   "name": "react-doctor",
   "private": true,
-  "packageManager": "pnpm@10.29.1",
   "scripts": {
     "dev": "pnpm --filter react-doctor run dev",
     "build": "pnpm --filter react-doctor run build",
@@ -27,5 +26,6 @@
     "tsdown": "^0.20.3",
     "typescript": "^5.7.0",
     "vitest": "^4.0.18"
-  }
+  },
+  "packageManager": "pnpm@10.29.1"
 }
