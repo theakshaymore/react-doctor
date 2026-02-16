@@ -137,7 +137,7 @@ const fixCommand = new Command("fix")
   });
 
 const installAmiCommand = new Command("install-ami")
-  .description("Alias for fix")
+  .description("Install Ami and auto-fix react-doctor issues")
   .argument("[directory]", "project directory", ".")
   .action(async (directory: string) => {
     try {
