@@ -1,4 +1,4 @@
-import { SECRET_MIN_LENGTH, SECRET_PATTERNS, SECRET_VARIABLE_PATTERN } from "../constants.js";
+import { SECRET_MIN_LENGTH_CHARS, SECRET_PATTERNS, SECRET_VARIABLE_PATTERN } from "../constants.js";
 import type { EsTreeNode, Rule, RuleContext } from "../types.js";
 
 export const noEval: Rule = {
@@ -44,7 +44,10 @@ export const noSecretsInClientCode: Rule = {
       const variableName = node.id.name;
       const literalValue = node.init.value;
 
-      if (SECRET_VARIABLE_PATTERN.test(variableName) && literalValue.length > SECRET_MIN_LENGTH) {
+      if (
+        SECRET_VARIABLE_PATTERN.test(variableName) &&
+        literalValue.length > SECRET_MIN_LENGTH_CHARS
+      ) {
         context.report({
           node,
           message: `Possible hardcoded secret in "${variableName}" — use environment variables instead`,

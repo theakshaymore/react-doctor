@@ -51,17 +51,17 @@ export const getCallbackStatements = (callback: EsTreeNode): EsTreeNode[] => {
 };
 
 export const countSetStateCalls = (node: EsTreeNode): number => {
-  let total = 0;
+  let setStateCallCount = 0;
   walkAst(node, (child) => {
     if (
       child.type === "CallExpression" &&
       child.callee?.type === "Identifier" &&
       isSetterIdentifier(child.callee.name)
     ) {
-      total++;
+      setStateCallCount++;
     }
   });
-  return total;
+  return setStateCallCount;
 };
 
 export const isSimpleExpression = (node: EsTreeNode | null): boolean => {
@@ -124,21 +124,21 @@ export const hasUseServerDirective = (node: EsTreeNode): boolean => {
 };
 
 export const containsFetchCall = (node: EsTreeNode): boolean => {
-  let found = false;
+  let didFindFetchCall = false;
   walkAst(node, (child) => {
-    if (found || child.type !== "CallExpression") return;
+    if (didFindFetchCall || child.type !== "CallExpression") return;
     if (child.callee?.type === "Identifier" && FETCH_CALLEE_NAMES.has(child.callee.name)) {
-      found = true;
+      didFindFetchCall = true;
     }
     if (
       child.callee?.type === "MemberExpression" &&
       child.callee.object?.type === "Identifier" &&
       FETCH_MEMBER_OBJECTS.has(child.callee.object.name)
     ) {
-      found = true;
+      didFindFetchCall = true;
     }
   });
-  return found;
+  return didFindFetchCall;
 };
 
 export const findJsxAttribute = (

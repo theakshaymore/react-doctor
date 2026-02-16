@@ -75,9 +75,16 @@ export interface KnipIssueRecords {
   };
 }
 
+export interface ScoreResult {
+  score: number;
+  label: string;
+}
+
 export interface ScanOptions {
   lint: boolean;
   deadCode: boolean;
+  verbose: boolean;
+  scoreOnly: boolean;
 }
 
 export interface WorkspacePackage {

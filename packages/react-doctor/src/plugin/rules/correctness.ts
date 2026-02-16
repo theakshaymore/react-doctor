@@ -62,19 +62,19 @@ const PREVENT_DEFAULT_ELEMENTS: Record<string, string> = {
 };
 
 const containsPreventDefaultCall = (node: EsTreeNode): boolean => {
-  let found = false;
+  let didFindPreventDefault = false;
   walkAst(node, (child) => {
-    if (found) return;
+    if (didFindPreventDefault) return;
     if (
       child.type === "CallExpression" &&
       child.callee?.type === "MemberExpression" &&
       child.callee.property?.type === "Identifier" &&
       child.callee.property.name === "preventDefault"
     ) {
-      found = true;
+      didFindPreventDefault = true;
     }
   });
-  return found;
+  return didFindPreventDefault;
 };
 
 export const noPreventDefault: Rule = {

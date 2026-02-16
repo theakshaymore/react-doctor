@@ -4,7 +4,7 @@ export const RELATED_USE_STATE_THRESHOLD = 3;
 export const DEEP_NESTING_THRESHOLD = 3;
 export const DUPLICATE_STORAGE_READ_THRESHOLD = 2;
 export const SEQUENTIAL_AWAIT_THRESHOLD = 2;
-export const SECRET_MIN_LENGTH = 8;
+export const SECRET_MIN_LENGTH_CHARS = 8;
 export const AUTH_CHECK_LOOKAHEAD_STATEMENTS = 3;
 
 export const LAYOUT_PROPERTIES = new Set([

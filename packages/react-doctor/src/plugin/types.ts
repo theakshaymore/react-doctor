@@ -21,5 +21,7 @@ export interface RulePlugin {
   rules: Record<string, Rule>;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type EsTreeNode = Record<string, any> & { type: string };
+export interface EsTreeNode {
+  type: string;
+  [key: string]: any;
+}

@@ -3,8 +3,17 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { performance } from "node:perf_hooks";
-import { SEPARATOR_LENGTH_CHARS } from "./constants.js";
-import type { Diagnostic, ScanOptions } from "./types.js";
+import {
+  MILLISECONDS_PER_SECOND,
+  OFFLINE_MESSAGE,
+  PERFECT_SCORE,
+  SCORE_BAR_WIDTH_CHARS,
+  SCORE_GOOD_THRESHOLD,
+  SCORE_OK_THRESHOLD,
+  SEPARATOR_LENGTH_CHARS,
+} from "./constants.js";
+import type { Diagnostic, ScanOptions, ScoreResult } from "./types.js";
+import { calculateScore } from "./utils/calculate-score.js";
 import { discoverProject, formatFrameworkName } from "./utils/discover-project.js";
 import { groupBy } from "./utils/group-by.js";
 import { highlighter } from "./utils/highlighter.js";
@@ -26,15 +35,22 @@ const sortBySeverity = (diagnosticGroups: [string, Diagnostic[]][]): [string, Di
     return severityA - severityB;
   });
 
-const collectAffectedFiles = (diagnostics: Diagnostic[]): Set<string> => {
-  const files = new Set<string>();
+const collectAffectedFiles = (diagnostics: Diagnostic[]): Set<string> =>
+  new Set(diagnostics.map((diagnostic) => diagnostic.filePath));
+
+const buildFileLineMap = (diagnostics: Diagnostic[]): Map<string, number[]> => {
+  const fileLines = new Map<string, number[]>();
   for (const diagnostic of diagnostics) {
-    files.add(diagnostic.filePath);
+    const lines = fileLines.get(diagnostic.filePath) ?? [];
+    if (diagnostic.line > 0) {
+      lines.push(diagnostic.line);
+    }
+    fileLines.set(diagnostic.filePath, lines);
   }
-  return files;
+  return fileLines;
 };
 
-const printDiagnostics = (diagnostics: Diagnostic[]): void => {
+const printDiagnostics = (diagnostics: Diagnostic[], isVerbose: boolean): void => {
   const ruleGroups = groupBy(
     diagnostics,
     (diagnostic) => `${diagnostic.plugin}/${diagnostic.rule}`,
@@ -54,18 +70,13 @@ const printDiagnostics = (diagnostics: Diagnostic[]): void => {
       logger.dim(`    ${firstDiagnostic.help}`);
     }
 
-    const fileLines = new Map<string, number[]>();
-    for (const diagnostic of ruleDiagnostics) {
-      const lines = fileLines.get(diagnostic.filePath) ?? [];
-      if (diagnostic.line > 0) {
-        lines.push(diagnostic.line);
-      }
-      fileLines.set(diagnostic.filePath, lines);
-    }
+    if (isVerbose) {
+      const fileLines = buildFileLineMap(ruleDiagnostics);
 
-    for (const [filePath, lines] of fileLines) {
-      const lineLabel = lines.length > 0 ? `: ${lines.join(", ")}` : "";
-      logger.dim(`    ${filePath}${lineLabel}`);
+      for (const [filePath, lines] of fileLines) {
+        const lineLabel = lines.length > 0 ? `: ${lines.join(", ")}` : "";
+        logger.dim(`    ${filePath}${lineLabel}`);
+      }
     }
 
     logger.break();
@@ -73,20 +84,15 @@ const printDiagnostics = (diagnostics: Diagnostic[]): void => {
 };
 
 const formatElapsedTime = (elapsedMilliseconds: number): string => {
-  if (elapsedMilliseconds < 1000) {
+  if (elapsedMilliseconds < MILLISECONDS_PER_SECOND) {
     return `${Math.round(elapsedMilliseconds)}ms`;
   }
-  return `${(elapsedMilliseconds / 1000).toFixed(1)}s`;
+  return `${(elapsedMilliseconds / MILLISECONDS_PER_SECOND).toFixed(1)}s`;
 };
 
 const formatRuleSummary = (ruleKey: string, ruleDiagnostics: Diagnostic[]): string => {
   const firstDiagnostic = ruleDiagnostics[0];
-  const fileLines = new Map<string, number[]>();
-  for (const diagnostic of ruleDiagnostics) {
-    const lines = fileLines.get(diagnostic.filePath) ?? [];
-    if (diagnostic.line > 0) lines.push(diagnostic.line);
-    fileLines.set(diagnostic.filePath, lines);
-  }
+  const fileLines = buildFileLineMap(ruleDiagnostics);
 
   const sections = [
     `Rule: ${ruleKey}`,
@@ -130,7 +136,34 @@ const writeDiagnosticsDirectory = (diagnostics: Diagnostic[]): string => {
   return outputDirectory;
 };
 
-const printSummary = (diagnostics: Diagnostic[], elapsedMilliseconds: number): void => {
+const colorizeByScore = (text: string, score: number): string => {
+  if (score >= SCORE_GOOD_THRESHOLD) return highlighter.success(text);
+  if (score >= SCORE_OK_THRESHOLD) return highlighter.warn(text);
+  return highlighter.error(text);
+};
+
+const buildScoreBar = (score: number): string => {
+  const filledCount = Math.round((score / PERFECT_SCORE) * SCORE_BAR_WIDTH_CHARS);
+  const emptyCount = SCORE_BAR_WIDTH_CHARS - filledCount;
+  const filled = "█".repeat(filledCount);
+  const empty = "░".repeat(emptyCount);
+  return colorizeByScore(filled, score) + highlighter.dim(empty);
+};
+
+const printScoreGauge = (score: number, label: string): void => {
+  const scoreDisplay = colorizeByScore(`${score}`, score);
+  const labelDisplay = colorizeByScore(label, score);
+  logger.log(`  ${scoreDisplay} / ${PERFECT_SCORE}  ${labelDisplay}`);
+  logger.break();
+  logger.log(`  ${buildScoreBar(score)}`);
+  logger.break();
+};
+
+const printSummary = (
+  diagnostics: Diagnostic[],
+  elapsedMilliseconds: number,
+  scoreResult: ScoreResult | null,
+): void => {
   const errorCount = diagnostics.filter((diagnostic) => diagnostic.severity === "error").length;
   const warningCount = diagnostics.filter((diagnostic) => diagnostic.severity === "warning").length;
   const affectedFileCount = collectAffectedFiles(diagnostics).size;
@@ -138,6 +171,13 @@ const printSummary = (diagnostics: Diagnostic[], elapsedMilliseconds: number): v
 
   logger.log("─".repeat(SEPARATOR_LENGTH_CHARS));
   logger.break();
+
+  if (scoreResult) {
+    printScoreGauge(scoreResult.score, scoreResult.label);
+  } else {
+    logger.dim(`  ${OFFLINE_MESSAGE}`);
+    logger.break();
+  }
 
   const parts: string[] = [];
   if (errorCount > 0) {
@@ -151,12 +191,12 @@ const printSummary = (diagnostics: Diagnostic[], elapsedMilliseconds: number): v
   );
   parts.push(highlighter.dim(`in ${elapsed}`));
 
-  logger.log(parts.join("  "));
+  logger.log(`  ${parts.join("  ")}`);
 
   try {
     const diagnosticsDirectory = writeDiagnosticsDirectory(diagnostics);
     logger.break();
-    logger.dim(`Full diagnostics written to ${diagnosticsDirectory}`);
+    logger.dim(`  Full diagnostics written to ${diagnosticsDirectory}`);
   } catch {
     logger.break();
   }
@@ -170,64 +210,94 @@ export const scan = async (directory: string, options: ScanOptions): Promise<voi
     throw new Error("No React dependency found in package.json");
   }
 
-  const frameworkLabel = formatFrameworkName(projectInfo.framework);
-  const languageLabel = projectInfo.hasTypeScript ? "TypeScript" : "JavaScript";
+  if (!options.scoreOnly) {
+    const frameworkLabel = formatFrameworkName(projectInfo.framework);
+    const languageLabel = projectInfo.hasTypeScript ? "TypeScript" : "JavaScript";
 
-  const completeStep = (message: string) => {
-    spinner(message).start().succeed(message);
-  };
+    const completeStep = (message: string) => {
+      spinner(message).start().succeed(message);
+    };
 
-  completeStep(`Detecting framework. Found ${highlighter.info(frameworkLabel)}.`);
-  completeStep(
-    `Detecting React version. Found ${highlighter.info(`React ${projectInfo.reactVersion}`)}.`,
-  );
-  completeStep(`Detecting language. Found ${highlighter.info(languageLabel)}.`);
-  completeStep(
-    `Detecting React Compiler. ${projectInfo.hasReactCompiler ? highlighter.info("Found React Compiler.") : "Not found."}`,
-  );
-  completeStep(`Found ${highlighter.info(`${projectInfo.sourceFileCount}`)} source files.`);
+    completeStep(`Detecting framework. Found ${highlighter.info(frameworkLabel)}.`);
+    completeStep(
+      `Detecting React version. Found ${highlighter.info(`React ${projectInfo.reactVersion}`)}.`,
+    );
+    completeStep(`Detecting language. Found ${highlighter.info(languageLabel)}.`);
+    completeStep(
+      `Detecting React Compiler. ${projectInfo.hasReactCompiler ? highlighter.info("Found React Compiler.") : "Not found."}`,
+    );
+    completeStep(`Found ${highlighter.info(`${projectInfo.sourceFileCount}`)} source files.`);
 
-  logger.break();
-
-  const diagnostics: Diagnostic[] = [];
-
-  if (options.lint) {
-    const lintSpinner = spinner("Running lint checks...").start();
-    try {
-      diagnostics.push(
-        ...(await runOxlint(
-          directory,
-          projectInfo.hasTypeScript,
-          projectInfo.framework,
-          projectInfo.hasReactCompiler,
-        )),
-      );
-      lintSpinner.succeed("Running lint checks.");
-    } catch {
-      lintSpinner.fail("Lint checks failed (non-fatal, skipping).");
-    }
+    logger.break();
   }
 
-  if (options.deadCode) {
-    const deadCodeSpinner = spinner("Detecting dead code...").start();
-    try {
-      diagnostics.push(...(await runKnip(directory)));
-      deadCodeSpinner.succeed("Detecting dead code.");
-    } catch {
-      deadCodeSpinner.fail("Dead code detection failed (non-fatal, skipping).");
-    }
-  }
+  const lintPromise = options.lint
+    ? (async () => {
+        const lintSpinner = options.scoreOnly ? null : spinner("Running lint checks...").start();
+        try {
+          const lintDiagnostics = await runOxlint(
+            directory,
+            projectInfo.hasTypeScript,
+            projectInfo.framework,
+            projectInfo.hasReactCompiler,
+          );
+          lintSpinner?.succeed("Running lint checks.");
+          return lintDiagnostics;
+        } catch {
+          lintSpinner?.fail("Lint checks failed (non-fatal, skipping).");
+          return [];
+        }
+      })()
+    : Promise.resolve<Diagnostic[]>([]);
 
-  diagnostics.push(...checkReducedMotion(directory));
+  const deadCodePromise = options.deadCode
+    ? (async () => {
+        const deadCodeSpinner = options.scoreOnly
+          ? null
+          : spinner("Detecting dead code...").start();
+        try {
+          const knipDiagnostics = await runKnip(directory);
+          deadCodeSpinner?.succeed("Detecting dead code.");
+          return knipDiagnostics;
+        } catch {
+          deadCodeSpinner?.fail("Dead code detection failed (non-fatal, skipping).");
+          return [];
+        }
+      })()
+    : Promise.resolve<Diagnostic[]>([]);
+
+  const [lintDiagnostics, deadCodeDiagnostics] = await Promise.all([lintPromise, deadCodePromise]);
+  const diagnostics = [
+    ...lintDiagnostics,
+    ...deadCodeDiagnostics,
+    ...checkReducedMotion(directory),
+  ];
 
   const elapsedMilliseconds = performance.now() - startTime;
 
-  if (diagnostics.length === 0) {
-    logger.success("No issues found!");
+  const scoreResult = await calculateScore(diagnostics);
+
+  if (options.scoreOnly) {
+    if (scoreResult) {
+      logger.log(`${scoreResult.score}`);
+    } else {
+      logger.dim(OFFLINE_MESSAGE);
+    }
     return;
   }
 
-  printDiagnostics(diagnostics);
+  if (diagnostics.length === 0) {
+    logger.success("No issues found!");
+    logger.break();
+    if (scoreResult) {
+      printScoreGauge(scoreResult.score, scoreResult.label);
+    } else {
+      logger.dim(`  ${OFFLINE_MESSAGE}`);
+    }
+    return;
+  }
 
-  printSummary(diagnostics, elapsedMilliseconds);
+  printDiagnostics(diagnostics, options.verbose);
+
+  printSummary(diagnostics, elapsedMilliseconds, scoreResult);
 };

@@ -1,23 +1,30 @@
 import path from "node:path";
 import type { WorkspacePackage } from "../types.js";
-import { listWorkspacePackages } from "./discover-project.js";
+import { discoverReactSubprojects, listWorkspacePackages } from "./discover-project.js";
+import { highlighter } from "./highlighter.js";
+import { logger } from "./logger.js";
 import { prompts } from "./prompts.js";
 
 export const selectProjects = async (
   rootDirectory: string,
   projectFlag: string | undefined,
+  skipPrompts: boolean,
 ): Promise<string[]> => {
-  const workspacePackages = listWorkspacePackages(rootDirectory);
-
-  if (workspacePackages.length === 0) {
-    return [rootDirectory];
+  const packages = listWorkspacePackages(rootDirectory);
+  if (packages.length === 0) {
+    packages.push(...discoverReactSubprojects(rootDirectory));
   }
 
-  if (projectFlag) {
-    return resolveProjectFlag(projectFlag, workspacePackages);
+  if (packages.length === 0) return [rootDirectory];
+
+  if (projectFlag) return resolveProjectFlag(projectFlag, packages);
+
+  if (skipPrompts) {
+    printDiscoveredProjects(packages);
+    process.exit(0);
   }
 
-  return promptProjectSelection(workspacePackages, rootDirectory);
+  return promptProjectSelection(packages, rootDirectory);
 };
 
 const resolveProjectFlag = (
@@ -45,6 +52,20 @@ const resolveProjectFlag = (
   }
 
   return resolvedDirectories;
+};
+
+const printDiscoveredProjects = (packages: WorkspacePackage[]): void => {
+  logger.log(`${highlighter.success("✔")} Found ${highlighter.info(`${packages.length}`)} React projects:`);
+  logger.break();
+
+  for (const workspacePackage of packages) {
+    logger.log(`  ${highlighter.dim("─")} ${workspacePackage.directory}`);
+  }
+
+  logger.break();
+  logger.dim(`Run with a specific path to scan a project:`);
+  logger.dim(`  npx react-doctor@latest <path>`);
+  logger.break();
 };
 
 const promptProjectSelection = async (

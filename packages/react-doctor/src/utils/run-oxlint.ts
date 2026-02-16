@@ -234,7 +234,13 @@ const resolveOxlintBinary = (): string => {
 
 const resolvePluginPath = (): string => {
   const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
-  return path.join(currentDirectory, "react-doctor-plugin.js");
+  const pluginPath = path.join(currentDirectory, "react-doctor-plugin.js");
+  if (fs.existsSync(pluginPath)) return pluginPath;
+
+  const distPluginPath = path.resolve(currentDirectory, "../../dist/react-doctor-plugin.js");
+  if (fs.existsSync(distPluginPath)) return distPluginPath;
+
+  return pluginPath;
 };
 
 const resolveDiagnosticCategory = (plugin: string, rule: string): string => {

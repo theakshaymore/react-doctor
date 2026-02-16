@@ -12,6 +12,9 @@ const VERSION = process.env.VERSION ?? "0.0.0";
 interface CliFlags {
   lint: boolean;
   deadCode: boolean;
+  verbose: boolean;
+  score: boolean;
+  yes: boolean;
   project?: string;
 }
 
@@ -25,25 +28,48 @@ const program = new Command()
   .argument("[directory]", "project directory to scan", ".")
   .option("--no-lint", "skip linting")
   .option("--no-dead-code", "skip dead code detection")
+  .option("--no-verbose", "hide file details per rule")
+  .option("--score", "output only the score")
+  .option("-y, --yes", "skip prompts, scan all workspace projects")
   .option("--project <name>", "select workspace project (comma-separated for multiple)")
   .action(async (directory: string, flags: CliFlags) => {
     try {
       const resolvedDirectory = path.resolve(directory);
-      logger.log(`react-doctor v${VERSION}`);
-      logger.break();
+      const isScoreOnly = flags.score;
+
+      if (!isScoreOnly) {
+        logger.log(`react-doctor v${VERSION}`);
+        logger.break();
+      }
 
       const scanOptions: ScanOptions = {
         lint: flags.lint,
         deadCode: flags.deadCode,
+        verbose: flags.verbose,
+        scoreOnly: isScoreOnly,
       };
 
-      const projectDirectories = await selectProjects(resolvedDirectory, flags.project);
+      const shouldSkipPrompts =
+        flags.yes ||
+        Boolean(process.env.CI) ||
+        Boolean(process.env.CLAUDECODE) ||
+        Boolean(process.env.AMI) ||
+        !process.stdin.isTTY;
+      const projectDirectories = await selectProjects(
+        resolvedDirectory,
+        flags.project,
+        shouldSkipPrompts,
+      );
 
       for (const projectDirectory of projectDirectories) {
-        logger.dim(`Scanning ${projectDirectory}...`);
-        logger.break();
+        if (!isScoreOnly) {
+          logger.dim(`Scanning ${projectDirectory}...`);
+          logger.break();
+        }
         await scan(projectDirectory, scanOptions);
-        logger.break();
+        if (!isScoreOnly) {
+          logger.break();
+        }
       }
     } catch (error) {
       handleError(error);

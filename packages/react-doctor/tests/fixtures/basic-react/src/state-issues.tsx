@@ -1,0 +1,96 @@
+import { useState, useEffect, useMemo, useCallback } from "react";
+
+const DerivedStateComponent = ({ items }: { items: string[] }) => {
+  const [filteredItems, setFilteredItems] = useState<string[]>([]);
+
+  useEffect(() => {
+    setFilteredItems(items);
+  }, [items]);
+
+  return <div>{filteredItems.join(",")}</div>;
+};
+
+const FetchInEffectComponent = () => {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    fetch("/api/data")
+      .then((response) => response.json())
+      .then((json) => setData(json));
+  }, []);
+
+  return <div>{JSON.stringify(data)}</div>;
+};
+
+const LazyInitComponent = () => {
+  const [value, setValue] = useState(JSON.parse("{}"));
+  return <div>{JSON.stringify(value)}</div>;
+};
+
+const CascadingSetStateComponent = () => {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+
+  useEffect(() => {
+    setName("John");
+    setEmail("john@example.com");
+  }, []);
+
+  return (
+    <div>
+      {name} {email}
+    </div>
+  );
+};
+
+const EffectEventHandlerComponent = ({ isOpen }: { isOpen: boolean }) => {
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add("modal-open");
+    }
+  }, [isOpen]);
+
+  return <div />;
+};
+
+const DerivedUseStateComponent = ({ initialName }: { initialName: string }) => {
+  const [name, setName] = useState(initialName);
+  return <input value={name} onChange={(event) => setName(event.target.value)} />;
+};
+
+const PreferUseReducerComponent = () => {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [age, setAge] = useState(0);
+
+  return (
+    <div>
+      <input value={name} onChange={(event) => setName(event.target.value)} />
+      <input value={email} onChange={(event) => setEmail(event.target.value)} />
+      <input value={age} type="number" onChange={(event) => setAge(Number(event.target.value))} />
+    </div>
+  );
+};
+
+const FunctionalSetStateComponent = () => {
+  const [count, setCount] = useState(0);
+  return <button onClick={() => setCount(count + 1)}>{count}</button>;
+};
+
+const DependencyLiteralComponent = () => {
+  useEffect(() => {}, [{}]);
+  useCallback(() => {}, [[]]);
+  return <div />;
+};
+
+export {
+  DerivedStateComponent,
+  FetchInEffectComponent,
+  LazyInitComponent,
+  CascadingSetStateComponent,
+  EffectEventHandlerComponent,
+  DerivedUseStateComponent,
+  PreferUseReducerComponent,
+  FunctionalSetStateComponent,
+  DependencyLiteralComponent,
+};

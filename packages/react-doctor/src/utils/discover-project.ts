@@ -105,18 +105,18 @@ const parsePnpmWorkspacePatterns = (rootDirectory: string): string[] => {
 
   const content = fs.readFileSync(workspacePath, "utf-8");
   const patterns: string[] = [];
-  let insidePackagesBlock = false;
+  let isInsidePackagesBlock = false;
 
   for (const line of content.split("\n")) {
     const trimmed = line.trim();
     if (trimmed === "packages:") {
-      insidePackagesBlock = true;
+      isInsidePackagesBlock = true;
       continue;
     }
-    if (insidePackagesBlock && trimmed.startsWith("-")) {
+    if (isInsidePackagesBlock && trimmed.startsWith("-")) {
       patterns.push(trimmed.replace(/^-\s*/, "").replace(/["']/g, ""));
-    } else if (insidePackagesBlock && trimmed.length > 0 && !trimmed.startsWith("#")) {
-      insidePackagesBlock = false;
+    } else if (isInsidePackagesBlock && trimmed.length > 0 && !trimmed.startsWith("#")) {
+      isInsidePackagesBlock = false;
     }
   }
 
@@ -224,6 +224,31 @@ const hasReactDependency = (packageJson: PackageJson): boolean => {
   return Object.keys(allDependencies).some(
     (packageName) => packageName === "next" || packageName.includes("react"),
   );
+};
+
+export const discoverReactSubprojects = (rootDirectory: string): WorkspacePackage[] => {
+  if (!fs.existsSync(rootDirectory) || !fs.statSync(rootDirectory).isDirectory()) return [];
+
+  const entries = fs.readdirSync(rootDirectory, { withFileTypes: true });
+  const packages: WorkspacePackage[] = [];
+
+  for (const entry of entries) {
+    if (!entry.isDirectory() || entry.name.startsWith(".") || entry.name === "node_modules") {
+      continue;
+    }
+
+    const subdirectory = path.join(rootDirectory, entry.name);
+    const packageJsonPath = path.join(subdirectory, "package.json");
+    if (!fs.existsSync(packageJsonPath)) continue;
+
+    const packageJson = readPackageJson(packageJsonPath);
+    if (!hasReactDependency(packageJson)) continue;
+
+    const name = packageJson.name ?? entry.name;
+    packages.push({ name, directory: subdirectory });
+  }
+
+  return packages;
 };
 
 export const listWorkspacePackages = (rootDirectory: string): WorkspacePackage[] => {

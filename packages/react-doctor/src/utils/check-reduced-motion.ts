@@ -19,6 +19,7 @@ const MISSING_REDUCED_MOTION_DIAGNOSTIC: Diagnostic = {
   line: 0,
   column: 0,
   category: "Accessibility",
+  weight: 2,
 };
 
 export const checkReducedMotion = (rootDirectory: string): Diagnostic[] => {

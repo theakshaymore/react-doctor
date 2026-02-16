@@ -43,6 +43,7 @@ const collectIssueRecords = (
         line: 0,
         column: 0,
         category: KNIP_CATEGORY_MAP[issueType] ?? "Dead Code",
+        weight: 1,
       });
     }
   }
@@ -89,6 +90,7 @@ export const runKnip = async (rootDirectory: string): Promise<Diagnostic[]> => {
       line: 0,
       column: 0,
       category: KNIP_CATEGORY_MAP["files"],
+      weight: 1,
     });
   }
 
