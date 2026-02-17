@@ -35,20 +35,24 @@ export const diagnose = async (
     throw new Error("No React dependency found in package.json");
   }
 
-  const emptyDiagnostics = (): Diagnostic[] => [];
-
   const lintPromise = lint
     ? runOxlint(
         resolvedDirectory,
         projectInfo.hasTypeScript,
         projectInfo.framework,
         projectInfo.hasReactCompiler,
-      ).catch(emptyDiagnostics)
-    : Promise.resolve(emptyDiagnostics());
+      ).catch((error: unknown) => {
+        console.error("Lint failed:", error);
+        return [] as Diagnostic[];
+      })
+    : Promise.resolve([] as Diagnostic[]);
 
   const deadCodePromise = deadCode
-    ? runKnip(resolvedDirectory).catch(emptyDiagnostics)
-    : Promise.resolve(emptyDiagnostics());
+    ? runKnip(resolvedDirectory).catch((error: unknown) => {
+        console.error("Dead code analysis failed:", error);
+        return [] as Diagnostic[];
+      })
+    : Promise.resolve([] as Diagnostic[]);
 
   const [lintDiagnostics, deadCodeDiagnostics] = await Promise.all([lintPromise, deadCodePromise]);
   const diagnostics = [
