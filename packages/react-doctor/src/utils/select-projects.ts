@@ -16,6 +16,12 @@ export const selectProjects = async (
   }
 
   if (packages.length === 0) return [rootDirectory];
+  if (packages.length === 1) {
+    logger.log(
+      `${highlighter.success("✔")} Select projects to scan ${highlighter.dim("›")} ${packages[0].name}`,
+    );
+    return [packages[0].directory];
+  }
 
   if (projectFlag) return resolveProjectFlag(projectFlag, packages);
 
