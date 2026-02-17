@@ -30,6 +30,9 @@ const SEVERITY_ORDER: Record<Diagnostic["severity"], number> = {
   warning: 1,
 };
 
+const colorizeBySeverity = (text: string, severity: Diagnostic["severity"]): string =>
+  severity === "error" ? highlighter.error(text) : highlighter.warn(text);
+
 const sortBySeverity = (diagnosticGroups: [string, Diagnostic[]][]): [string, Diagnostic[]][] =>
   diagnosticGroups.toSorted(([, diagnosticsA], [, diagnosticsB]) => {
     const severityA = SEVERITY_ORDER[diagnosticsA[0].severity];
@@ -62,10 +65,11 @@ const printDiagnostics = (diagnostics: Diagnostic[], isVerbose: boolean): void =
 
   for (const [, ruleDiagnostics] of sortedRuleGroups) {
     const firstDiagnostic = ruleDiagnostics[0];
-    const icon =
-      firstDiagnostic.severity === "error" ? highlighter.error("✗") : highlighter.warn("⚠");
+    const severitySymbol = firstDiagnostic.severity === "error" ? "✗" : "⚠";
+    const icon = colorizeBySeverity(severitySymbol, firstDiagnostic.severity);
     const count = ruleDiagnostics.length;
-    const countLabel = count > 1 ? ` (${count})` : "";
+    const countLabel =
+      count > 1 ? colorizeBySeverity(` (${count})`, firstDiagnostic.severity) : "";
 
     logger.log(`  ${icon} ${firstDiagnostic.message}${countLabel}`);
     if (firstDiagnostic.help) {
