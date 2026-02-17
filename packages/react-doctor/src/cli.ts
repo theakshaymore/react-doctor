@@ -68,7 +68,6 @@ const program = new Command()
       const isAutomatedEnvironment = [
         process.env.CI,
         process.env.CLAUDECODE,
-        process.env.CURSOR_TRACE_ID,
         process.env.CURSOR_AGENT,
         process.env.CODEX_CI,
         process.env.OPENCODE,
