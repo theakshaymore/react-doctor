@@ -1,5 +1,17 @@
 # react-doctor
 
+## 0.0.7
+
+### Patch Changes
+
+- fix: deeplinking
+
+## 0.0.6
+
+### Patch Changes
+
+- fix: improvements
+
 ## 0.0.5
 
 ### Patch Changes
